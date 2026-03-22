@@ -1,0 +1,32 @@
+Analyzing GoogleChat...                                         
+
+warning - The declaration '_showContextMenu' isn't referenced - lib\components\chat_bubble.dart:170:8 - unused_element
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\main.dart:23:8 - unnecessary_import
+  error - The named parameter 'fileName' is required, but there's no corresponding argument - lib\pages\chat_page.dart:155:38 - missing_required_argument
+  error - The named parameter 'type' is required, but there's no corresponding argument - lib\pages\chat_page.dart:155:38 - missing_required_argument
+  error - Too many positional arguments: 0 expected, but 3 found - lib\pages\chat_page.dart:155:49 - extra_positional_arguments_could_be_named
+  error - The named parameter 'fileName' is required, but there's no corresponding argument - lib\pages\chat_page.dart:483:38 - missing_required_argument
+  error - The named parameter 'type' is required, but there's no corresponding argument - lib\pages\chat_page.dart:483:38 - missing_required_argument
+  error - Too many positional arguments: 0 expected, but 3 found - lib\pages\chat_page.dart:484:9 - extra_positional_arguments_could_be_named
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:522:9 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:892:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:934:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:958:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:987:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:1090:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:1092:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:1116:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:1208:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:1286:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\chat_page.dart:1440:47 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:1461:33 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:1713:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:1718:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:1792:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:1824:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:1831:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\chat_page.dart:1925:9 - curly_braces_in_flow_control_structures
+  error - The named parameter 'onToggleSelection' isn't defined - lib\pages\chat_page.dart:1965:11 - undefined_named_parameter
+   info - Don't use 'BuildContext's across async gaps - lib\pages\settings_page.dart:409:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\settings_page.dart:414:48 - use_build_context_synchronously
+

@@ -1,0 +1,146 @@
+PODS:
+  - CryptoSwift (1.8.4)
+  - Flutter (1.0.0)
+  - flutter_callkit_incoming (0.0.1):
+    - CryptoSwift
+    - Flutter
+  - flutter_logs_yoer (0.0.1):
+    - Flutter
+    - ZIPFoundation
+  - flutter_ringtone_player (0.0.1):
+    - Flutter
+  - flutter_volume_controller (0.0.1):
+    - Flutter
+  - fluttertoast (0.0.2):
+    - Flutter
+  - Masonry (1.1.0)
+  - open_filex (0.0.2):
+    - Flutter
+  - permission_handler_apple (9.3.0):
+    - Flutter
+  - proximity_sensor (0.0.1):
+    - Flutter
+  - receive_sharing_intent (1.8.1):
+    - Flutter
+  - screen_brightness_ios (0.1.0):
+    - Flutter
+  - zego_callkit (1.0.0):
+    - Flutter
+  - zego_express_engine (3.23.0):
+    - Flutter
+  - zego_uikit (2.28.44):
+    - Flutter
+    - Masonry
+    - zego_express_engine
+    - ZegoUIKitReport (= 0.2.10)
+  - zego_uikit_prebuilt_call (4.22.3):
+    - Flutter
+  - zego_uikit_signaling_plugin (2.8.19):
+    - Flutter
+  - zego_zim (2.26.0):
+    - Flutter
+    - ZIM (= 2.27.0)
+  - zego_zpns (2.6.0):
+    - Flutter
+    - ZPNs (= 2.6.0)
+  - ZegoUIKitReport (0.2.10)
+  - ZIM (2.27.0)
+  - ZIPFoundation (0.9.20)
+  - ZPNs (2.6.0)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_callkit_incoming (from `.symlinks/plugins/flutter_callkit_incoming/ios`)
+  - flutter_logs_yoer (from `.symlinks/plugins/flutter_logs_yoer/ios`)
+  - flutter_ringtone_player (from `.symlinks/plugins/flutter_ringtone_player/ios`)
+  - flutter_volume_controller (from `.symlinks/plugins/flutter_volume_controller/ios`)
+  - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
+  - open_filex (from `.symlinks/plugins/open_filex/ios`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - proximity_sensor (from `.symlinks/plugins/proximity_sensor/ios`)
+  - receive_sharing_intent (from `.symlinks/plugins/receive_sharing_intent/ios`)
+  - screen_brightness_ios (from `.symlinks/plugins/screen_brightness_ios/ios`)
+  - zego_callkit (from `.symlinks/plugins/zego_callkit/ios`)
+  - zego_express_engine (from `.symlinks/plugins/zego_express_engine/ios`)
+  - zego_uikit (from `.symlinks/plugins/zego_uikit/ios`)
+  - zego_uikit_prebuilt_call (from `.symlinks/plugins/zego_uikit_prebuilt_call/ios`)
+  - zego_uikit_signaling_plugin (from `.symlinks/plugins/zego_uikit_signaling_plugin/ios`)
+  - zego_zim (from `.symlinks/plugins/zego_zim/ios`)
+  - zego_zpns (from `.symlinks/plugins/zego_zpns/ios`)
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - CryptoSwift
+    - Masonry
+    - ZegoUIKitReport
+    - ZIM
+    - ZIPFoundation
+    - ZPNs
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_callkit_incoming:
+    :path: ".symlinks/plugins/flutter_callkit_incoming/ios"
+  flutter_logs_yoer:
+    :path: ".symlinks/plugins/flutter_logs_yoer/ios"
+  flutter_ringtone_player:
+    :path: ".symlinks/plugins/flutter_ringtone_player/ios"
+  flutter_volume_controller:
+    :path: ".symlinks/plugins/flutter_volume_controller/ios"
+  fluttertoast:
+    :path: ".symlinks/plugins/fluttertoast/ios"
+  open_filex:
+    :path: ".symlinks/plugins/open_filex/ios"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
+  proximity_sensor:
+    :path: ".symlinks/plugins/proximity_sensor/ios"
+  receive_sharing_intent:
+    :path: ".symlinks/plugins/receive_sharing_intent/ios"
+  screen_brightness_ios:
+    :path: ".symlinks/plugins/screen_brightness_ios/ios"
+  zego_callkit:
+    :path: ".symlinks/plugins/zego_callkit/ios"
+  zego_express_engine:
+    :path: ".symlinks/plugins/zego_express_engine/ios"
+  zego_uikit:
+    :path: ".symlinks/plugins/zego_uikit/ios"
+  zego_uikit_prebuilt_call:
+    :path: ".symlinks/plugins/zego_uikit_prebuilt_call/ios"
+  zego_uikit_signaling_plugin:
+    :path: ".symlinks/plugins/zego_uikit_signaling_plugin/ios"
+  zego_zim:
+    :path: ".symlinks/plugins/zego_zim/ios"
+  zego_zpns:
+    :path: ".symlinks/plugins/zego_zpns/ios"
+
+SPEC CHECKSUMS:
+  CryptoSwift: e64e11850ede528a02a0f3e768cec8e9d92ecb90
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_callkit_incoming: cb8138af67cda6dd981f7101a5d709003af21502
+  flutter_logs_yoer: 4b6ed7705cc0e5306d9ecce1d5be5568045e0e73
+  flutter_ringtone_player: a77c42464250845611eaa44c27e8714acc800138
+  flutter_volume_controller: c2be490cb0487e8b88d0d9fc2b7e1c139a4ebccb
+  fluttertoast: 2c67e14dce98bbdb200df9e1acf610d7a6264ea1
+  Masonry: 678fab65091a9290e40e2832a55e7ab731aad201
+  open_filex: 432f3cd11432da3e39f47fcc0df2b1603854eff1
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  proximity_sensor: 2aef59f90cf0382935faf58ad0a79e1e860773bd
+  receive_sharing_intent: 222384f00ffe7e952bbfabaa9e3967cb87e5fe00
+  screen_brightness_ios: 5ed898fa50fa82a26171c086ca5e28228f932576
+  zego_callkit: 8e3bc2e9fc6895cff1b27841b1de1100344d2613
+  zego_express_engine: 9b73b5b83129ee033287f6597fd5d700b84b27c8
+  zego_uikit: 728c996bc68760fc203863b90440869d7c97a2ae
+  zego_uikit_prebuilt_call: 5134f0ab000850779b5ad9b73e91d168cf316a3c
+  zego_uikit_signaling_plugin: ffced40608c89b1ac0241a6194dacb9bc5af19b7
+  zego_zim: 98d0946eeca309073e48a43ba14d1dce7a52c80f
+  zego_zpns: e2ef9b972e9b6be00b78b32b71c550c426584752
+  ZegoUIKitReport: a993f7ccc5d243998a7e601a60e16fcd6c084417
+  ZIM: b39b9a5a2ddff4d60de51c3bd6a5574cedbcdf03
+  ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
+  ZPNs: 73bad0046a74e37315201053f9a0e7ac625d9436
+
+PODFILE CHECKSUM: 7da0f46dd3adec9ba67ffab635d8ae895d83e9ec
+
+COCOAPODS: 1.16.2

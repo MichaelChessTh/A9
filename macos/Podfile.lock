@@ -1,0 +1,47 @@
+PODS:
+  - flutter_volume_controller (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+  - screen_brightness_macos (0.1.0):
+    - FlutterMacOS
+  - zego_express_engine (3.23.0):
+    - FlutterMacOS
+  - zego_zim (2.26.0):
+    - FlutterMacOS
+    - ZIM_macOS (= 2.27.0)
+  - ZIM_macOS (2.27.0)
+
+DEPENDENCIES:
+  - flutter_volume_controller (from `Flutter/ephemeral/.symlinks/plugins/flutter_volume_controller/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - screen_brightness_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_brightness_macos/macos`)
+  - zego_express_engine (from `Flutter/ephemeral/.symlinks/plugins/zego_express_engine/macos`)
+  - zego_zim (from `Flutter/ephemeral/.symlinks/plugins/zego_zim/macos`)
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - ZIM_macOS
+
+EXTERNAL SOURCES:
+  flutter_volume_controller:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_volume_controller/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  screen_brightness_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/screen_brightness_macos/macos
+  zego_express_engine:
+    :path: Flutter/ephemeral/.symlinks/plugins/zego_express_engine/macos
+  zego_zim:
+    :path: Flutter/ephemeral/.symlinks/plugins/zego_zim/macos
+
+SPEC CHECKSUMS:
+  flutter_volume_controller: ae08bf0838e4901f299781c3ab5056dfab0c2f74
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  screen_brightness_macos: 2a3ee243f8051c340381e8e51bcedced8360f421
+  zego_express_engine: efcec0b47e2bae353ff77b2737d83662beb642ca
+  zego_zim: 2511e94603f6fca5ade4db2ea8280e31ae72e2ec
+  ZIM_macOS: 939b84b21cb97765ac8cb4b056275c37c5dbaae2
+
+PODFILE CHECKSUM: 9df0934a9cfd1fd8ce99a324ec5b5db94b280a1f
+
+COCOAPODS: 1.16.2
