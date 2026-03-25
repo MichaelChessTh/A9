@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:googlechat/components/a9_logo.dart';
 import 'package:googlechat/services/update/update_service.dart';
@@ -53,16 +54,14 @@ class UpdatePage extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color:
-                        isDark
-                            ? Colors.white.withAlpha(10)
-                            : Colors.black.withAlpha(5),
+                    color: isDark
+                        ? Colors.white.withAlpha(10)
+                        : Colors.black.withAlpha(5),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color:
-                          isDark
-                              ? Colors.white.withAlpha(10)
-                              : Colors.black.withAlpha(5),
+                      color: isDark
+                          ? Colors.white.withAlpha(10)
+                          : Colors.black.withAlpha(5),
                     ),
                   ),
                   child: Column(
@@ -74,18 +73,16 @@ class UpdatePage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color:
-                              isUpdateAvailable
-                                  ? const Color(0xFF0072FF)
-                                  : theme.colorScheme.onSurface,
+                          color: isUpdateAvailable
+                              ? const Color(0xFF0072FF)
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         isUpdateAvailable
-                            ? AppLocalizations.of(
-                              context,
-                            )!.versionReady(updateService.latestVersion)
+                            ? AppLocalizations.of(context)!
+                                .versionReady(updateService.latestVersion)
                             : AppLocalizations.of(context)!.latestVersionNotice,
                         style: TextStyle(
                           color: theme.colorScheme.onSurface.withAlpha(150),
@@ -103,9 +100,8 @@ class UpdatePage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!.currentVersionLabel(updateService.currentVersion),
+                          AppLocalizations.of(context)!
+                              .currentVersionLabel(updateService.currentVersion),
                           style: TextStyle(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,
@@ -117,7 +113,45 @@ class UpdatePage extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+
+                // iOS info banner
+                if (Platform.isIOS && isUpdateAvailable) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0072FF).withAlpha(15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF0072FF).withAlpha(40),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          color: Color(0xFF0072FF),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'iOS updates are distributed via the App Store. '
+                            'Tap below to open the App Store and update the app.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color:
+                                  theme.colorScheme.onSurface.withAlpha(200),
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Review/Changelog Header
                 Row(
@@ -145,10 +179,9 @@ class UpdatePage extends StatelessWidget {
                   constraints: const BoxConstraints(minHeight: 100),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color:
-                        isDark
-                            ? Colors.white.withAlpha(5)
-                            : Colors.black.withAlpha(3),
+                    color: isDark
+                        ? Colors.white.withAlpha(5)
+                        : Colors.black.withAlpha(3),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -180,11 +213,35 @@ class UpdatePage extends StatelessWidget {
   }
 
   Widget _buildActionButton(BuildContext context, UpdateService service) {
+    // ── iOS: redirect to App Store ──────────────────────────────────
+    if (Platform.isIOS) {
+      if (!service.isUpdateAvailable) {
+        return ElevatedButton(
+          onPressed: null,
+          style: ElevatedButton.styleFrom(
+            disabledBackgroundColor: Colors.grey.withAlpha(30),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          child: Text(
+            AppLocalizations.of(context)!.systemUpToDate,
+            style: const TextStyle(color: Colors.white60),
+          ),
+        );
+      }
+      return _gradientButton(
+        label: 'Open App Store',
+        icon: Icons.open_in_new_rounded,
+        onTap: () => service.openAppStore(),
+      );
+    }
+
+    // ── Android: download / install flow ────────────────────────────
     if (!service.isUpdateAvailable && !service.isDownloaded) {
       return ElevatedButton(
         onPressed: null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.grey.withAlpha(50),
           disabledBackgroundColor: Colors.grey.withAlpha(30),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -198,39 +255,9 @@ class UpdatePage extends StatelessWidget {
     }
 
     if (service.isDownloaded) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0072FF).withAlpha(80),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: () => service.installUpdate(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: Text(
-            AppLocalizations.of(context)!.installNow,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
+      return _gradientButton(
+        label: AppLocalizations.of(context)!.installNow,
+        onTap: () => service.installUpdate(),
       );
     }
 
@@ -250,9 +277,8 @@ class UpdatePage extends StatelessWidget {
                 Text(
                   AppLocalizations.of(context)!.downloading,
                   style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withAlpha(150),
+                    color:
+                        Theme.of(context).colorScheme.onSurface.withAlpha(150),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -287,7 +313,17 @@ class UpdatePage extends StatelessWidget {
       );
     }
 
-    // Default: Download Button
+    return _gradientButton(
+      label: AppLocalizations.of(context)!.downloadUpdate,
+      onTap: () => service.downloadUpdate(),
+    );
+  }
+
+  Widget _gradientButton({
+    required String label,
+    IconData? icon,
+    required VoidCallback onTap,
+  }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -302,22 +338,25 @@ class UpdatePage extends StatelessWidget {
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: () => service.downloadUpdate(),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-        child: Text(
-          AppLocalizations.of(context)!.downloadUpdate,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: icon != null
+            ? Icon(icon, color: Colors.white, size: 18)
+            : const SizedBox.shrink(),
+        label: Text(
+          label,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
             letterSpacing: 1,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
         ),
       ),

@@ -61,6 +61,9 @@
 		<string>audio</string>
 		<string>processing</string>
 		<string>location</string>
+		<string>remote-notification</string>
+		<string>push-to-talk</string>
+		<string>external-accessory</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

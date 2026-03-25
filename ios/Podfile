@@ -38,9 +38,8 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  # Patch Flutter's generated Swift Package to use iOS 15.0
-  system("sed -i '' 's/\\.iOS(\"13.0\")/\\.iOS(\"15.0\")/g' Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift 2>/dev/null")
-  system("sed -i '' 's/\\.iOS(\"13.0\")/\\.iOS(\"15.0\")/g' Flutter/ephemeral/Packages/.packages/FlutterFramework/Package.swift 2>/dev/null")
+  # Patch all Flutter's generated Swift Packages to use iOS 15.0 recursively
+  system("find Flutter/ephemeral/Packages -name 'Package.swift' -exec sed -i '' 's/\\.iOS(\"13.0\")/\\.iOS(\"15.0\")/g' {} + 2>/dev/null")
   system("sed -i '' \"s/s.ios.deployment_target = '13.0'/s.ios.deployment_target = '15.0'/g\" Flutter/Flutter.podspec 2>/dev/null")
 
   installer.pods_project.targets.each do |target|

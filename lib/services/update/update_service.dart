@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UpdateService with ChangeNotifier {
   static final UpdateService _instance = UpdateService._internal();
@@ -36,6 +37,13 @@ class UpdateService with ChangeNotifier {
 
   String? _localApkPath;
 
+  /// On iOS, updates go through the App Store.
+  /// Set this to your App Store URL once the app is published.
+  static const String _appStoreUrl =
+      'https://apps.apple.com/app/id000000000'; // TODO: replace with real App Store ID
+
+  bool get isIOS => Platform.isIOS;
+
   Future<void> init() async {
     final packageInfo = await PackageInfo.fromPlatform();
     _currentVersion = packageInfo.version;
@@ -55,7 +63,7 @@ class UpdateService with ChangeNotifier {
         }
       } catch (e) {
         debugPrint("Version file not found: $e");
-        _latestVersion = _currentVersion; // Default to current if not found
+        _latestVersion = _currentVersion;
       }
 
       // 2. Get review text from updates/review.txt
@@ -73,7 +81,9 @@ class UpdateService with ChangeNotifier {
       // 3. Compare versions
       if (_latestVersion.isNotEmpty && _latestVersion != _currentVersion) {
         _isUpdateAvailable = true;
-        _showLocalUpdateNotification();
+        if (Platform.isAndroid) {
+          _showLocalUpdateNotification();
+        }
       } else {
         _isUpdateAvailable = false;
       }
@@ -86,19 +96,17 @@ class UpdateService with ChangeNotifier {
   Future<void> _showLocalUpdateNotification() async {
     final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-    if (Platform.isAndroid) {
-      const channel = AndroidNotificationChannel(
-        'app_updates',
-        'App Updates',
-        description: 'Notifications for new app versions',
-        importance: Importance.high,
-      );
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(channel);
-    }
+    const channel = AndroidNotificationChannel(
+      'app_updates',
+      'App Updates',
+      description: 'Notifications for new app versions',
+      importance: Importance.high,
+    );
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
 
     const androidDetails = AndroidNotificationDetails(
       'app_updates',
@@ -117,7 +125,9 @@ class UpdateService with ChangeNotifier {
     );
   }
 
+  /// Android: download APK from Firebase Storage
   Future<void> downloadUpdate() async {
+    if (!Platform.isAndroid) return;
     if (_isDownloading) return;
 
     _isDownloading = true;
@@ -145,7 +155,6 @@ class UpdateService with ChangeNotifier {
           if (total > 0) {
             _downloadProgress = (count / total).clamp(0.0, 1.0);
           } else {
-            // If total is -1, we just notify that something is happening (e.g. 0.01)
             _downloadProgress = 0.01;
           }
           notifyListeners();
@@ -162,7 +171,9 @@ class UpdateService with ChangeNotifier {
     }
   }
 
+  /// Android: install downloaded APK
   Future<void> installUpdate() async {
+    if (!Platform.isAndroid) return;
     if (_localApkPath == null) return;
     final file = File(_localApkPath!);
     if (await file.exists()) {
@@ -171,6 +182,14 @@ class UpdateService with ChangeNotifier {
       debugPrint("APK file not found at $_localApkPath");
       _isDownloaded = false;
       notifyListeners();
+    }
+  }
+
+  /// iOS: open App Store page
+  Future<void> openAppStore() async {
+    final uri = Uri.parse(_appStoreUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 }
