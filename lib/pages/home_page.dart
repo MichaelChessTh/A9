@@ -1089,7 +1089,6 @@ class _ChatTile extends StatelessWidget {
         final baseUsername = profile?.username ?? '…';
         final displayUsername =
             nickname != null && nickname!.isNotEmpty ? nickname! : baseUsername;
-        final status = profile?.status ?? '';
         final timeStr = _formatTime(lastMessageTimestamp);
         final preview =
             lastMessage.length > 35
@@ -1103,7 +1102,18 @@ class _ChatTile extends StatelessWidget {
 
             return InkWell(
               onTap: () {
-                if (profile != null) onTap(profile);
+                // If full profile loaded → use it; otherwise create a minimal stub
+                // so the chat is always openable even before Firestore responds.
+                final target = profile ?? UserProfile(
+                  uid: otherUID,
+                  email: '',
+                  username: nickname ?? displayUsername,
+                  usernameLower: (nickname ?? displayUsername).toLowerCase(),
+                  status: '',
+                  blockedUsers: [],
+                  nicknames: {},
+                );
+                onTap(target);
               },
               onLongPress: onLongPress,
               child: Padding(
@@ -1182,48 +1192,36 @@ class _ChatTile extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 3),
-                                if (status.isNotEmpty) ...[
-                                  Text(
-                                    status,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 13,
-                                    ),
+                                StreamBuilder<bool>(
+                                  stream: ChatService().getTypingStatus(
+                                    otherUID,
                                   ),
-                                ] else ...[
-                                  StreamBuilder<bool>(
-                                    stream: ChatService().getTypingStatus(
-                                      otherUID,
-                                    ),
-                                    builder: (context, typingSnap) {
-                                      final isTyping = typingSnap.data == true;
-                                      if (isTyping) {
-                                        return Text(
-                                          'Печатает...',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: theme.colorScheme.primary,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        );
-                                      }
+                                  builder: (context, typingSnap) {
+                                    final isTyping = typingSnap.data == true;
+                                    if (isTyping) {
                                       return Text(
-                                        preview,
+                                        'Печатает...',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                          color: theme.colorScheme.onSurface
-                                              .withAlpha(153), // 0.6 opacity
+                                          color: theme.colorScheme.primary,
                                           fontSize: 14,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       );
-                                    },
-                                  ),
-                                ],
+                                    }
+                                    return Text(
+                                      preview,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: theme.colorScheme.onSurface
+                                            .withAlpha(153), // 0.6 opacity
+                                        fontSize: 14,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ),

@@ -112,8 +112,13 @@ exports.onDirectMessage = onDocumentCreated(
     const fcmToken = recipientDoc.data()?.fcmToken;
     if (!fcmToken) return; // recipient has no token (logged out / never set up)
 
+    // Use nickname if recipient has set one for sender, otherwise use sender's username
+    const recipientNicknames = recipientDoc.data()?.nicknames || {};
     const senderName =
-      senderDoc.data()?.username || senderDoc.data()?.email || "Someone";
+      recipientNicknames[senderId] ||
+      senderDoc.data()?.username ||
+      senderDoc.data()?.email ||
+      "Someone";
 
     // Determine notification body
     let body;
@@ -138,7 +143,8 @@ exports.onDirectMessage = onDocumentCreated(
       data: {
         type: "dm",
         chatRoomId: roomId,
-        senderId,
+        senderID: senderId,
+        senderEmail: senderDoc.data()?.email || "",
         senderName,
       },
     });
@@ -187,27 +193,33 @@ exports.onGroupMessage = onDocumentCreated(
     const recipients = memberUIDs.filter((uid) => uid !== senderId);
     if (recipients.length === 0) return;
 
-    // Batch-fetch FCM tokens
+    // Batch-fetch recipient docs
     const userDocs = await Promise.all(
       recipients.map((uid) => db.collection("Users").doc(uid).get())
     );
 
     const sends = userDocs
       .filter((doc) => doc.data()?.fcmToken)
-      .map((doc) =>
-        sendPush({
+      .map((doc) => {
+        // Use per-recipient nickname for the sender if set
+        const recipientNicknames = doc.data()?.nicknames || {};
+        const displaySenderName =
+          recipientNicknames[senderId] || senderName;
+        const bodyWithNickname =
+          body.replace(new RegExp(`^${senderName}: `), `${displaySenderName}: `);
+        return sendPush({
           token: doc.data().fcmToken,
           title: groupName,
-          body,
+          body: bodyWithNickname,
           data: {
             type: "group",
             groupId,
-            senderId,
-            senderName,
+            senderID: senderId,
+            senderName: displaySenderName,
             groupName,
           },
-        })
-      );
+        });
+      });
 
     await Promise.all(sends);
   }

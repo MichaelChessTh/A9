@@ -23,6 +23,9 @@ plugins {
     id("com.google.gms.google-services") version("4.4.2") apply false
     // END: FlutterFire Configuration
     id("org.jetbrains.kotlin.android") version "2.1.10" apply false
+    // Toolchain resolver: allows Gradle to auto-provision the JDK toolchain
+    // required by plugins like flutter_callkit_incoming that need Java 17.
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
 }
 
 include(":app")

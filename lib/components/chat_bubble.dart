@@ -691,7 +691,7 @@ class _ChatBubbleState extends State<ChatBubble>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      widget.replyToSenderEmail?.split('@').first ?? '',
+                      widget.replyToSenderEmail ?? '',
                       style: TextStyle(
                         color: nameColor,
                         fontWeight: FontWeight.bold,
