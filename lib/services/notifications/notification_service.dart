@@ -47,13 +47,18 @@ class NotificationService {
   StreamSubscription<QuerySnapshot>? _localFirestoreSub;
   final Map<String, Timestamp> _notifiedTimestamps = {};
 
+  /// The chat room ID or group ID that is currently open in the foreground.
+  /// Set by ChatPage/GroupChatPage on initState/dispose so we can suppress
+  /// notifications for the currently-visible conversation.
+  static String? currentChatId;
+
   Future<void> init() async {
     if (_initialised) return;
     _initialised = true;
 
-    // ВНИМАНИЕ: мы удалили FirebaseMessaging.onBackgroundMessage,
-    // так как он перезаписывал фоновый обработчик ZegoCloud, из-за чего звонки не приходили в убитое приложение!
-    // Обычные текстовые уведомления Firebase все равно будут показываться системой.
+    // Note: FirebaseMessaging.onBackgroundMessage is intentionally not set here.
+    // FCM background/terminated messages are delivered as system notifications by
+    // the device OS automatically (via Cloud Functions sendPush). No handler needed.
 
     // ② Request permissions (iOS / Android 13+)
     await _fcm.requestPermission(alert: true, badge: true, sound: true);
@@ -137,13 +142,17 @@ class NotificationService {
 
   // ─── Foreground notification ──────────────────────────────────
   void _showLocal(RemoteMessage message) {
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      return; // Do not show UI notification when app is active/open
-    }
-
     final notif = message.notification;
     if (notif == null) return;
     final data = message.data;
+
+    // Suppress notification if the user is already in the chat that sent it
+    final chatRoomId = data['chatRoomId'] as String?;
+    final groupId = data['groupId'] as String?;
+    final activeId = chatRoomId ?? groupId;
+    if (activeId != null && activeId.isNotEmpty && activeId == currentChatId) {
+      return;
+    }
 
     // Decrypt body if it's encrypted
     final body = EncryptionService.decrypt(notif.body ?? '');
@@ -244,6 +253,25 @@ class NotificationService {
         ),
       );
     }
+  }
+
+  // ─── Clear notifications (call on app resume / chat open) ───────
+  Future<void> clearAllNotifications() async {
+    try {
+      await _local.cancelAll();
+      // Reset badge count to 0
+      await _local.show(
+        0,
+        null,
+        null,
+        const NotificationDetails(
+          iOS: DarwinNotificationDetails(badgeNumber: 0),
+          macOS: DarwinNotificationDetails(badgeNumber: 0),
+        ),
+      );
+      // Immediately cancel that silent notification too
+      await _local.cancel(0);
+    } catch (_) {}
   }
 
   // ─── Lifecycle ────────────────────────────────────────────────

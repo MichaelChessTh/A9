@@ -18,7 +18,6 @@ import 'package:googlechat/services/group/group_service.dart';
 import 'package:googlechat/services/user/user_service.dart';
 import 'package:googlechat/l10n/app_localizations.dart';
 import 'package:googlechat/services/chat/encryption_service.dart';
-import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -478,101 +477,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     }
   }
 
-  /// Shows WhatsApp-style call type selector
-  void _showCallTypeMenu(BuildContext context, String groupName) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      backgroundColor: isDark ? const Color(0xFF1E1E2E) : Colors.white,
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                ListTile(
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF34A853), Color(0xFF22963F)],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.call_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  title: const Text(
-                    '\u0413\u043e\u043b\u043e\u0441\u043e\u0432\u043e\u0439 \u0437\u0432\u043e\u043d\u043e\u043a',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(groupName),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    ZegoUIKitPrebuiltCallInvitationService().send(
-                      isVideoCall: false,
-                      resourceID: 'zegouikit_call',
-                      invitees: [],
-                    );
-                  },
-                ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                ListTile(
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF0084FF), Color(0xFF0073E6)],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.videocam_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  title: const Text(
-                    '\u0412\u0438\u0434\u0435\u043e\u0437\u0432\u043e\u043d\u043e\u043a',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(groupName),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    ZegoUIKitPrebuiltCallInvitationService().send(
-                      isVideoCall: true,
-                      resourceID: 'zegouikit_call',
-                      invitees: [],
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  // Calls feature removed — Zego SDK stripped from this build.
 
   void _openGroupInfo(GroupChat group) {
     showModalBottomSheet(
@@ -788,44 +693,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
                           });
                         },
                       ),
-                      // Single styled call button
                       if (!_isSearching)
                         IconButton(
-                          icon: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF0084FF), Color(0xFF0073E6)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF0084FF).withAlpha(80),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.call_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
+                          icon: Icon(
+                            Icons.info_outline_rounded,
+                            color: theme.colorScheme.primary,
+                            size: 22,
                           ),
-                          onPressed:
-                              () => _showCallTypeMenu(context, group.name),
+                          onPressed: () => _openGroupInfo(group),
                         ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.info_outline_rounded,
-                          color: theme.colorScheme.primary,
-                          size: 22,
-                        ),
-                        onPressed: () => _openGroupInfo(group),
-                      ),
                       const SizedBox(width: 4),
                     ],
             bottom: PreferredSize(

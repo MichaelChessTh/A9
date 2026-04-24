@@ -32,7 +32,7 @@ import 'package:intl/intl.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:googlechat/l10n/app_localizations.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:googlechat/services/notifications/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatPage extends StatefulWidget {
@@ -141,6 +141,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
     WidgetsBinding.instance.addObserver(this);
     _chatService.markMessagesAsSeen(widget.receiverID);
+    // Dismiss any active notifications now that the user opened this chat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.clearAllNotifications();
+    });
     _messageController.addListener(() {
       _isComposing.value = _messageController.text.trim().isNotEmpty;
     });
@@ -666,6 +670,14 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           messageId: docRef.id,
           tempPath: localFilePath,
         );
+        // Also save a permanent copy so the sender can still display the media
+        // after Firebase Storage deletes the original (group chats).
+        MediaService.saveSenderMedia(
+          messageId: docRef.id,
+          fileName: fileName,
+          tempPath: localFilePath,
+          type: type,
+        ).ignore();
       }
       _clearReply();
     } catch (e) {
@@ -808,129 +820,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     );
   }
 
-  /// Single call button — shows bottom sheet to pick voice / video (like WhatsApp)
-  Widget _buildCallButton(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return IconButton(
-      icon: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0084FF), Color(0xFF0073E6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0084FF).withAlpha(80),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.call_rounded, color: Colors.white, size: 18),
-      ),
-      onPressed: () {
-        showModalBottomSheet(
-          context: context,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          backgroundColor: isDark ? const Color(0xFF1E1E2E) : Colors.white,
-          builder: (ctx) {
-            final receiverName =
-                _receiverName.isNotEmpty ? _receiverName : widget.receiverEmail;
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    ListTile(
-                      leading: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF34A853), Color(0xFF22963F)],
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.call_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
-                      title: const Text(
-                        'Голосовой звонок',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(receiverName),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _initiateCall(context, isVideo: false);
-                      },
-                    ),
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                    ListTile(
-                      leading: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0084FF), Color(0xFF0073E6)],
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.videocam_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
-                      title: const Text(
-                        'Видеозвонок',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(receiverName),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _initiateCall(context, isVideo: true);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _initiateCall(BuildContext context, {required bool isVideo}) {
-    final receiverName =
-        _receiverName.isNotEmpty ? _receiverName : widget.receiverEmail;
-    ZegoUIKitPrebuiltCallInvitationService().send(
-      isVideoCall: isVideo,
-      resourceID: "zegouikit_call",
-      invitees: [ZegoCallUser(widget.receiverID, receiverName)],
-    );
-  }
+  // Calls feature removed — Zego SDK stripped from this build.
 
   @override
   Widget build(BuildContext context) {
@@ -1178,7 +1068,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       });
                     },
                   ),
-                  if (!_isSearching) _buildCallButton(context),
                   if (!_isSearching) const SizedBox(width: 4),
                 ],
         bottom: PreferredSize(

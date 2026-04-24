@@ -42,12 +42,14 @@ function decryptMessage(text) {
   try {
     const base64 = text.slice(4); // remove 'enc:' prefix
     const encrypted = Buffer.from(base64, "base64");
-    const decipher = crypto.createDecipheriv("aes-256-ctr", ENCRYPT_KEY, ENCRYPT_IV);
+    // Flutter's encrypt package uses AES-CBC (not CTR)
+    const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPT_KEY, ENCRYPT_IV);
+    decipher.setAutoPadding(true);
     const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
     return decrypted.toString("utf8");
   } catch (e) {
     console.error("Decrypt error:", e);
-    return text; // fallback to raw if decryption fails
+    return ""; // Return empty string so notification shows nothing rather than garbled text
   }
 }
 

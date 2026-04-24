@@ -46,6 +46,12 @@ class MediaService {
       }
       final savePath = '${mediaDir.path}/${messageId}_$fileName';
 
+      // Already saved permanently — skip copy
+      if (File(savePath).existsSync()) {
+        await LocalCache.saveMediaPath(messageId, savePath);
+        return savePath;
+      }
+
       final tempFile = File(tempPath);
       if (tempFile.existsSync()) {
         await tempFile.copy(savePath);
@@ -63,22 +69,21 @@ class MediaService {
     required String url,
     required String fileName,
     required MessageType type,
-    required String chatId, // To potentially nullify URL
+    required String chatId, // chatRoomId or groupId
     bool isReceiver = false,
   }) async {
-    // Check cache
+    // Check cache first
     final existingPath = LocalCache.getMediaPath(messageId);
     if (existingPath != null && File(existingPath).existsSync()) {
       return existingPath;
     }
 
     if (kIsWeb) {
-      return null; // Can't easily do local file management & gallery on Web
+      return null; // Can't do local file management on Web
     }
 
     try {
       final appDir = await getApplicationDocumentsDirectory();
-
       final mediaDir = Directory('${appDir.path}/GoogleChatMedia');
       if (!mediaDir.existsSync()) {
         mediaDir.createSync(recursive: true);
@@ -87,96 +92,114 @@ class MediaService {
       final savePath = '${mediaDir.path}/${messageId}_$fileName';
 
       if (!File(savePath).existsSync()) {
-        // Download
-        await _dio.download(url, savePath);
+        // Download the file
+        try {
+          await _dio.download(url, savePath);
+        } catch (e) {
+          debugPrint('Media download failed (URL may be expired): $e');
+          return null;
+        }
 
         // Save to Gallery if it's an image or video
         if (type == MessageType.image) {
-          final hasAccess = await Gal.hasAccess();
-          if (!hasAccess) await Gal.requestAccess();
-          await Gal.putImage(savePath);
-        } else if (type == MessageType.video) {
-          final hasAccess = await Gal.hasAccess();
-          if (!hasAccess) await Gal.requestAccess();
-          await Gal.putVideo(savePath);
-        }
-
-        // Save local path to Hive
-        await LocalCache.saveMediaPath(messageId, savePath);
-
-        // Delete from Firebase Storage after successful gallery save
-        if (isReceiver && chatId.isNotEmpty) {
           try {
-            final isGroupChat = !chatId.contains('_');
-
-            if (isGroupChat) {
-              final uid = FirebaseAuth.instance.currentUser!.uid;
-              final msgRef = FirebaseFirestore.instance
-                  .collection('group_rooms')
-                  .doc(chatId)
-                  .collection('messages')
-                  .doc(messageId);
-
-              // Register this user as downloaded
-              await msgRef.update({
-                'downloadedBy': FieldValue.arrayUnion([uid]),
-              });
-
-              // Check if all other members have downloaded
-              final msgSnap = await msgRef.get();
-              final groupSnap =
-                  await FirebaseFirestore.instance
-                      .collection('group_rooms')
-                      .doc(chatId)
-                      .get();
-
-              if (msgSnap.exists && groupSnap.exists) {
-                final downloadedBy = List<String>.from(
-                  msgSnap.data()!['downloadedBy'] ?? [],
-                );
-                final members = List<String>.from(
-                  groupSnap.data()!['memberUIDs'] ?? [],
-                );
-                final senderId = msgSnap.data()!['senderID'];
-
-                bool allDownloaded = true;
-                for (final member in members) {
-                  if (member != senderId && !downloadedBy.contains(member)) {
-                    allDownloaded = false;
-                    break;
-                  }
-                }
-
-                if (allDownloaded) {
-                  final storageRef = FirebaseStorage.instance.refFromURL(url);
-                  await storageRef.delete();
-                  debugPrint('Deleted $fileName from Firebase Storage (Group)');
-                }
-              }
-            } else {
-              // Priority 1-on-1 chat
-              final storageRef = FirebaseStorage.instance.refFromURL(url);
-              await storageRef.delete();
-              debugPrint('Deleted $fileName from Firebase Storage (1-on-1)');
-            }
+            final hasAccess = await Gal.hasAccess();
+            if (!hasAccess) await Gal.requestAccess();
+            await Gal.putImage(savePath);
           } catch (e) {
-            debugPrint('Error deleting from storage: $e');
+            debugPrint('Gallery save failed (non-critical): $e');
+          }
+        } else if (type == MessageType.video) {
+          try {
+            final hasAccess = await Gal.hasAccess();
+            if (!hasAccess) await Gal.requestAccess();
+            await Gal.putVideo(savePath);
+          } catch (e) {
+            debugPrint('Gallery video save failed (non-critical): $e');
           }
         }
 
-        // Update Firestore to clear the fileUrl if we don't need it?
-        // Actually, let's keep it nullified locally or globally?
-        // If we nullify globally, other group chat members won't get it.
-        // For 1:1, we could nullify. Let's not nullify in DB unless requested, because other devices of same user.
-        // Wait, user said "после того, как конечный пользователь получил файлы, они должны загрузиться к нему на телефон и удалиться из firebase"
-        // Let's delete the file from Storage but NOT clear fileUrl from Firestore. It will just 404 later.
-        // Or we can leave a flag in db.
+        // Save local path to Hive cache
+        await LocalCache.saveMediaPath(messageId, savePath);
+
+        // ─── Storage cleanup strategy ─────────────────────────────────────
+        // IMPORTANT: We do NOT delete from Firebase Storage for 1-on-1 chats.
+        // The sender's device needs the URL to still be valid if their local
+        // temp file was cleared by the OS.
+        //
+        // For group chats: still track downloadedBy, but only delete when ALL
+        // non-sender members have downloaded AND we've confirmed it's safe.
+        if (isReceiver && chatId.isNotEmpty) {
+          final isGroupChat = !chatId.contains('_');
+          if (isGroupChat) {
+            await _handleGroupMediaDownload(messageId, chatId, url, fileName);
+          }
+          // For 1-on-1 chats: no Storage deletion. The file stays until it
+          // naturally expires or a scheduled Cloud Function cleans up old files.
+        }
       }
 
       return savePath;
     } catch (e) {
       debugPrint('Media download error: $e');
       return null;
+    }
+  }
+
+  /// Handle group chat media tracking — only delete from Storage
+  /// once every non-sender member has a local copy.
+  static Future<void> _handleGroupMediaDownload(
+    String messageId,
+    String groupId,
+    String url,
+    String fileName,
+  ) async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      final msgRef = FirebaseFirestore.instance
+          .collection('group_rooms')
+          .doc(groupId)
+          .collection('messages')
+          .doc(messageId);
+
+      // Register this user as downloaded
+      await msgRef.update({
+        'downloadedBy': FieldValue.arrayUnion([uid]),
+      });
+
+      // Check if all other members have downloaded
+      final msgSnap = await msgRef.get();
+      final groupSnap = await FirebaseFirestore.instance
+          .collection('group_rooms')
+          .doc(groupId)
+          .get();
+
+      if (!msgSnap.exists || !groupSnap.exists) return;
+
+      final downloadedBy = List<String>.from(msgSnap.data()!['downloadedBy'] ?? []);
+      final members = List<String>.from(groupSnap.data()!['memberUIDs'] ?? []);
+      final senderId = msgSnap.data()!['senderID'] as String?;
+
+      // Check whether all non-sender members have downloaded
+      bool allDownloaded = true;
+      for (final member in members) {
+        if (member != senderId && !downloadedBy.contains(member)) {
+          allDownloaded = false;
+          break;
+        }
+      }
+
+      if (allDownloaded) {
+        try {
+          final storageRef = FirebaseStorage.instance.refFromURL(url);
+          await storageRef.delete();
+          debugPrint('Deleted $fileName from Firebase Storage (Group — all downloaded)');
+        } catch (e) {
+          debugPrint('Storage delete failed (may already be deleted): $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('Group media tracking error: $e');
     }
   }
 }
