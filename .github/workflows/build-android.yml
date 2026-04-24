@@ -42,16 +42,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # ── 4. Restore google-services.json ─────────────────────────────────────
-      - name: Restore google-services.json
-        run: |
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' | base64 -d > android/app/google-services.json
-
-      # ── 5. Restore firebase_options.dart ────────────────────────────────────
-      - name: Restore firebase_options.dart
-        run: |
-          echo '${{ secrets.FIREBASE_OPTIONS_DART }}' | base64 -d > lib/firebase_options.dart
-
       # ── 6. Get dependencies ─────────────────────────────────────────────────
       - name: Flutter pub get
         run: flutter pub get
