@@ -10,26 +10,20 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
 
-    <!-- ── ZegoCloud Call Permissions ── -->
+    <!-- ── ZegoCloud Call Permissions (REMOVED — calls feature stripped) ── -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- Для показа экрана звонка когда телефон заблокирован -->
+    <!-- Full-screen notification intent (for incoming calls / urgent messages) -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
-    <!-- Для автозапуска при перезагрузке / wake device on call -->
+    <!-- Allow FCM to start app on boot -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:label="A9"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon"
-        android:usesCleartextTraffic="true">
+        android:icon="@mipmap/launcher_icon">
 
         <activity
             android:name=".MainActivity"
@@ -83,17 +77,6 @@
             </intent-filter>
         </activity>
 
-        <!-- ── ZegoCloud: полноэкранное уведомление о звонке ── -->
-        <!-- Этот Activity показывается поверх локскрина при входящем звонке -->
-        <activity
-            android:name="com.zegocloud.uikit.prebuilt.call.internal.callnotification.CallNotificationActivity"
-            android:exported="true"
-            android:launchMode="singleInstance"
-            android:showOnLockScreen="true"
-            android:turnScreenOn="true"
-            android:excludeFromRecents="true"
-            android:taskAffinity="call.task"
-            android:configChanges="orientation|screenSize"/>
 
         <!-- FCM: custom notification icon (white, mono) used in status bar -->
         <meta-data

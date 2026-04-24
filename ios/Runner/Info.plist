@@ -46,9 +46,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Camera access is required for video calls and capturing photos.</string>
+	<string>A9 needs camera access to capture photos and videos to share in chat.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is required for audio calls and video recording.</string>
+	<string>A9 needs microphone access to record voice messages and videos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Photo library access is required to save received images and videos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -60,10 +60,7 @@
 		<string>fetch</string>
 		<string>audio</string>
 		<string>processing</string>
-		<string>location</string>
 		<string>remote-notification</string>
-		<string>push-to-talk</string>
-		<string>external-accessory</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

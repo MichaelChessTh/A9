@@ -31,25 +31,44 @@ initializeApp();
 
 const db = getFirestore();
 
-// ─── AES-128-CBC decryption matching Flutter EncryptionService ───────────────
-// Key: 'my32characterslongsecretkeyA9!!!' (32 bytes = AES-256-CBC)
-// IV:  'a9_iv_static_16b' (16 bytes)
-const ENCRYPT_KEY = Buffer.from("my32characterslongsecretkeyA9!!!", "utf8");
-const ENCRYPT_IV = Buffer.from("a9_iv_static_16b", "utf8");
+// ─── AES-256-CBC decryption matching Flutter EncryptionService ───────────────
+// Key is read from Firebase Secret (AES_KEY) or falls back to the compiled default.
+// To deploy with a secret:
+//   firebase functions:secrets:set AES_KEY
+// Then add  runWith({ secrets: ["AES_KEY"] })  to each function export.
+//
+// NEW FORMAT: base64( iv_16_bytes + ciphertext ) — random IV per message
+// OLD FORMAT: base64( ciphertext )               — static IV (legacy)
+const AES_KEY_VALUE = process.env.AES_KEY || "my32characterslongsecretkeyA9!!!";
+const ENCRYPT_KEY = Buffer.from(AES_KEY_VALUE, "utf8");
+const LEGACY_IV   = Buffer.from("a9_iv_static_16b", "utf8"); // for old messages only
 
 function decryptMessage(text) {
   if (!text || !text.startsWith("enc:")) return text;
   try {
-    const base64 = text.slice(4); // remove 'enc:' prefix
-    const encrypted = Buffer.from(base64, "base64");
-    // Flutter's encrypt package uses AES-CBC (not CTR)
-    const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPT_KEY, ENCRYPT_IV);
+    const combined = Buffer.from(text.slice(4), "base64");
+
+    // Try new format first: first 16 bytes = IV, rest = ciphertext
+    if (combined.length > 16 && combined.length % 16 === 16 + (combined.length - 16)) {
+      try {
+        const iv = combined.subarray(0, 16);
+        const ciphertext = combined.subarray(16);
+        if (ciphertext.length % 16 === 0) {
+          const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPT_KEY, iv);
+          decipher.setAutoPadding(true);
+          return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
+        }
+      } catch (_) { /* fall through to legacy */ }
+    }
+
+    // Legacy format: entire buffer is ciphertext, use static IV
+    const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPT_KEY, LEGACY_IV);
     decipher.setAutoPadding(true);
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    const decrypted = Buffer.concat([decipher.update(combined), decipher.final()]);
     return decrypted.toString("utf8");
   } catch (e) {
-    console.error("Decrypt error:", e);
-    return ""; // Return empty string so notification shows nothing rather than garbled text
+    console.error("Decrypt error:", e.message);
+    return ""; // empty so notification shows type icon instead of garbled text
   }
 }
 
