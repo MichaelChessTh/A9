@@ -186,6 +186,21 @@ class UserService {
     });
   }
 
+  // ─── Delete Account ───────────────────────────────────────────
+  static Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    final uid = user.uid;
+    
+    // 1. Delete user's Firestore profile
+    await _firestore.collection('Users').doc(uid).delete();
+    
+    // 2. Delete Firebase Auth user
+    // Note: this may throw FirebaseAuthException if the user hasn't signed in recently
+    await user.delete();
+  }
+
   // ─── Set Nickname ──────────────────────────────────────────
   static Future<void> setNickname(String targetUID, String nickname) async {
     final uid = _auth.currentUser!.uid;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:googlechat/pages/privacy_policy_page.dart';
 import 'package:googlechat/components/a9_logo.dart';
 import 'package:googlechat/l10n/app_localizations.dart';
 import 'package:googlechat/services/language/language_provider.dart';
@@ -157,12 +159,26 @@ class _WelcomePageState extends State<WelcomePage> {
                           _acceptedPolicy = !_acceptedPolicy;
                         });
                       },
-                      child: Text(
-                        AppLocalizations.of(context)?.acceptPolicy ??
-                            'I accept the privacy policy of the application',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface,
+                      child: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: AppLocalizations.of(context)?.acceptPolicy ?? 'I accept the ',
+                              style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14),
+                            ),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: TextStyle(
+                                color: theme.colorScheme.primary, 
+                                fontSize: 14, 
+                                fontWeight: FontWeight.bold,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()));
+                                },
+                            ),
+                          ],
                         ),
                       ),
                     ),

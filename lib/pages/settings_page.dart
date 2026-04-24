@@ -352,6 +352,44 @@ class SettingsPage extends StatelessWidget {
                 onTap: () => _showChangePasswordDialog(context),
               ),
             ),
+
+            const SizedBox(height: 12),
+
+            // ─── Delete Account Section ───
+            Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.warning_rounded,
+                    color: Colors.red,
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  'Delete Account',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                onTap: () => _showDeleteAccountDialog(context),
+              ),
+            ),
+
           ],
         ),
       ),
@@ -419,7 +457,53 @@ class SettingsPage extends StatelessWidget {
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
                 ),
-                child: Text(AppLocalizations.of(context)!.update),
+                 child: Text(AppLocalizations.of(context)!.update),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
+            content: const Text(
+              'Are you sure you want to delete your account? This action is permanent and cannot be undone. All your messages and profile data will be destroyed.',
+              style: TextStyle(fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppLocalizations.of(context)!.cancel),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    await UserService.deleteAccount();
+                    Fluttertoast.showToast(msg: 'Account deleted successfully.');
+                    // Navigation to welcome page handled by auth listener in main
+                    if (context.mounted) Navigator.pop(context); 
+                  } on FirebaseAuthException catch (e) {
+                    if (e.code == 'requires-recent-login') {
+                      Fluttertoast.showToast(
+                        msg: 'Please log out and log in again to verify your identity before deleting.',
+                        toastLength: Toast.LENGTH_LONG,
+                      );
+                    } else {
+                      Fluttertoast.showToast(msg: 'Error: ${e.message}');
+                    }
+                  } catch (e) {
+                    Fluttertoast.showToast(msg: 'Failed to delete account.');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Delete'),
               ),
             ],
           ),
