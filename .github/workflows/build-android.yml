@@ -52,17 +52,6 @@ jobs:
         run: |
           echo '${{ secrets.FIREBASE_OPTIONS_DART }}' | base64 -d > lib/firebase_options.dart
 
-      # ── 5.5 Restore Android Keystore ────────────────────────────────────────
-      - name: Restore Android Keystore
-        run: |
-          echo '${{ secrets.A9_UPLOAD_KEYSTORE_BASE64 }}' | base64 -d > android/app/upload-keystore.jks
-          cat <<EOF > android/key.properties
-          storePassword=\${{ secrets.A9_STORE_PASSWORD }}
-          keyPassword=\${{ secrets.A9_KEY_PASSWORD }}
-          keyAlias=\${{ secrets.A9_KEY_ALIAS }}
-          storeFile=upload-keystore.jks
-          EOF
-
       # ── 6. Get dependencies ─────────────────────────────────────────────────
       - name: Flutter pub get
         run: flutter pub get
