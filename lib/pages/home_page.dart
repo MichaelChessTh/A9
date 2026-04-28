@@ -18,7 +18,7 @@ import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import 'package:googlechat/services/user/user_service.dart';
 import 'package:intl/intl.dart';
 import 'package:googlechat/l10n/app_localizations.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' hide Message;
 import 'package:provider/provider.dart';
 import 'package:googlechat/services/update/update_service.dart';
 
@@ -77,15 +77,13 @@ class _HomePageState extends State<HomePage>
   Future<void> _requestBackgroundPermissions() async {
     if (!Platform.isAndroid) return;
     try {
-      final notif = await Permission.notification.status;
-      if (notif.isDenied) {
-        await Permission.notification.request();
-      }
-
-      final battery = await Permission.ignoreBatteryOptimizations.status;
-      if (!battery.isGranted) {
-        await Permission.ignoreBatteryOptimizations.request();
-      }
+      // Request notification permission via flutter_local_notifications (SPM-compatible)
+      final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestNotificationsPermission();
 
       bool? isAutoStartReq =
           await DisableBatteryOptimization.isAutoStartEnabled;

@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+
 import 'package:googlechat/components/user_avatar.dart';
 import 'package:googlechat/models/user_profile.dart';
 import 'package:googlechat/pages/profile_page.dart';
@@ -434,8 +434,8 @@ class SettingsPage extends StatelessWidget {
                 onPressed: () async {
                   final pwd = ctrl.text.trim();
                   if (pwd.length < 6) {
-                    Fluttertoast.showToast(
-                      msg: AppLocalizations.of(context)!.passwordLengthError,
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(AppLocalizations.of(context)!.passwordLengthError)),
                     );
                     return;
                   }
@@ -443,13 +443,13 @@ class SettingsPage extends StatelessWidget {
                     await FirebaseAuth.instance.currentUser?.updatePassword(
                       pwd,
                     );
-                    Fluttertoast.showToast(
-                      msg: AppLocalizations.of(context)!.passwordUpdated,
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(AppLocalizations.of(context)!.passwordUpdated)),
                     );
                     if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    Fluttertoast.showToast(
-                      msg: AppLocalizations.of(context)!.passwordUpdateError,
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(AppLocalizations.of(context)!.passwordUpdateError)),
                     );
                   }
                 },
@@ -483,20 +483,22 @@ class SettingsPage extends StatelessWidget {
                 onPressed: () async {
                   try {
                     await UserService.deleteAccount();
-                    Fluttertoast.showToast(msg: 'Account deleted successfully.');
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account deleted successfully.')));
                     // Navigation to welcome page handled by auth listener in main
                     if (context.mounted) Navigator.pop(context); 
                   } on FirebaseAuthException catch (e) {
                     if (e.code == 'requires-recent-login') {
-                      Fluttertoast.showToast(
-                        msg: 'Please log out and log in again to verify your identity before deleting.',
-                        toastLength: Toast.LENGTH_LONG,
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please log out and log in again to verify your identity before deleting.'),
+                          duration: Duration(seconds: 4),
+                        ),
                       );
                     } else {
-                      Fluttertoast.showToast(msg: 'Error: ${e.message}');
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
                     }
                   } catch (e) {
-                    Fluttertoast.showToast(msg: 'Failed to delete account.');
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete account.')));
                   }
                 },
                 style: ElevatedButton.styleFrom(

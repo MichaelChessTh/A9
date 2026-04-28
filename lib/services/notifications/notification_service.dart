@@ -21,7 +21,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 // ─── Android notification channel ────────────────────────────────────────────
 const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-  'a9_messages',
+  'googlechat_messages',
   'Messages',
   description: 'New messages from A9',
   importance: Importance.high,
@@ -47,6 +47,11 @@ class NotificationService {
   StreamSubscription<QuerySnapshot>? _localFirestoreSub;
   final Map<String, Timestamp> _notifiedTimestamps = {};
 
+  /// Set to true by main.dart when the app is in the foreground (resumed).
+  /// When true, all local notification banners and sounds are suppressed —
+  /// the user can already see the incoming message in the chat stream.
+  static bool isInForeground = true;
+
   /// The chat room ID or group ID that is currently open in the foreground.
   /// Set by ChatPage/GroupChatPage on initState/dispose so we can suppress
   /// notifications for the currently-visible conversation.
@@ -63,11 +68,12 @@ class NotificationService {
     // ② Request permissions (iOS / Android 13+)
     await _fcm.requestPermission(alert: true, badge: true, sound: true);
 
-    // ③ iOS foreground presentation
+    // ③ iOS foreground presentation — disable FCM's own banner so we get
+    //    exactly ONE notification via flutter_local_notifications below.
     await _fcm.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
+      alert: false,
+      badge: false,
+      sound: false,
     );
 
     // ④ Create Android high-priority channel
@@ -142,6 +148,9 @@ class NotificationService {
 
   // ─── Foreground notification ──────────────────────────────────
   void _showLocal(RemoteMessage message) {
+    // If the app is currently visible to the user, suppress all banners/sounds.
+    if (isInForeground) return;
+
     final notif = message.notification;
     if (notif == null) return;
     final data = message.data;

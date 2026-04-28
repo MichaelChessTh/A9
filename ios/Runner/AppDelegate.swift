@@ -12,10 +12,6 @@ import UserNotifications
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
 
-    // Configure Firebase
-    if FirebaseApp.app() == nil {
-      FirebaseApp.configure()
-    }
 
     // Set messaging delegate
     Messaging.messaging().delegate = self

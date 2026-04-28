@@ -8,7 +8,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:googlechat/models/message.dart';
 import 'package:intl/intl.dart';
-import 'package:open_filex/open_filex.dart';
+
 import 'package:dio/dio.dart';
 import 'package:googlechat/components/video_widget.dart';
 import 'package:googlechat/l10n/app_localizations.dart';
@@ -133,8 +133,12 @@ class _ChatBubbleState extends State<ChatBubble>
 
   String? _localPath;
   bool _isDownloading = false;
+  // Guards against multiple concurrent download calls triggered by rebuilds.
+  bool _downloadStarted = false;
+  // Tracks whether the last download attempt failed, for tap-to-retry UI.
+  bool _downloadFailed = false;
 
-  Future<void> _initMedia() async {
+  Future<void> _initMedia({bool retry = false}) async {
     final fileUrl = widget.fileUrl;
     if (fileUrl == null ||
         fileUrl.isEmpty ||
@@ -142,28 +146,38 @@ class _ChatBubbleState extends State<ChatBubble>
       return;
     }
 
+    // Check local cache first.
     final existingPath = MediaService.getLocalPath(widget.messageId);
     if (existingPath != null && File(existingPath).existsSync()) {
       if (mounted) setState(() => _localPath = existingPath);
       return;
     }
 
+    // Prevent duplicate concurrent downloads unless this is a manual retry.
+    if (_downloadStarted && !retry) return;
+    _downloadStarted = true;
+
+    if (!mounted) return;
+    setState(() {
+      _isDownloading = true;
+      _downloadFailed = false;
+    });
+
+    final newPath = await MediaService.downloadAndSaveMedia(
+      messageId: widget.messageId,
+      url: fileUrl,
+      fileName: widget.fileName ?? 'media',
+      type: widget.messageType,
+      chatId: widget.chatId,
+      isReceiver: !widget.isCurrentUser,
+    );
+
     if (mounted) {
-      setState(() => _isDownloading = true);
-      final newPath = await MediaService.downloadAndSaveMedia(
-        messageId: widget.messageId,
-        url: fileUrl,
-        fileName: widget.fileName ?? 'media',
-        type: widget.messageType,
-        chatId: widget.chatId,
-        isReceiver: !widget.isCurrentUser,
-      );
-      if (mounted) {
-        setState(() {
-          _localPath = newPath;
-          _isDownloading = false;
-        });
-      }
+      setState(() {
+        _localPath = newPath;
+        _isDownloading = false;
+        _downloadFailed = newPath == null;
+      });
     }
   }
 
@@ -753,11 +767,14 @@ class _ChatBubbleState extends State<ChatBubble>
           // Use cached bytes to prevent repeated base64 decoding on each rebuild
           final bytes = _cachedBase64Bytes;
           if (bytes == null) {
+            // Still decoding — show a spinner, not a broken image icon
             return Container(
               height: 200,
               width: 250,
               color: Colors.grey.withValues(alpha: 0.1),
-              child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             );
           }
           return GestureDetector(
@@ -807,6 +824,34 @@ class _ChatBubbleState extends State<ChatBubble>
           );
         }
 
+        // Download failed — show tap-to-retry instead of a broken state.
+        if (_downloadFailed) {
+          return GestureDetector(
+            onTap: () => _initMedia(retry: true),
+            child: Container(
+              height: 200,
+              width: 250,
+              color: Colors.grey.withValues(alpha: 0.1),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.refresh_rounded, color: Colors.grey, size: 32),
+                    SizedBox(height: 6),
+                    Text(
+                      'Tap to retry',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Fallback: stream directly from the network URL.
+        // This handles edge cases where the local download path is unexpectedly
+        // null but the Firebase Storage URL is still valid.
         return GestureDetector(
           onTap: () => _viewImage(context),
           child: Image.network(
@@ -825,19 +870,27 @@ class _ChatBubbleState extends State<ChatBubble>
                 ),
               );
             },
-            errorBuilder:
-                (context, error, stackTrace) => Container(
-                  height: 200,
-                  width: 250,
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  child: Center(
-                    child: Text(
-                      AppLocalizations.of(context)?.mediaRemoved ??
-                          'Media removed',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
+            errorBuilder: (context, error, stackTrace) => GestureDetector(
+              onTap: () => _initMedia(retry: true),
+              child: Container(
+                height: 200,
+                width: 250,
+                color: Colors.grey.withValues(alpha: 0.1),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, color: Colors.grey, size: 32),
+                      SizedBox(height: 6),
+                      Text(
+                        'Tap to retry',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
+              ),
+            ),
           ),
         );
       case MessageType.video:
@@ -888,14 +941,25 @@ class _ChatBubbleState extends State<ChatBubble>
     if (_localPath != null && File(_localPath!).existsSync()) {
       return VideoWidget(localPath: _localPath!);
     }
-    return Container(
-      height: 200,
-      width: 250,
-      color: Colors.grey.withValues(alpha: 0.1),
-      child: Center(
-        child: Text(
-          AppLocalizations.of(context)?.videoUnavailable ?? 'Video unavailable',
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
+    // Download failed or hasn't completed — show tap-to-retry.
+    return GestureDetector(
+      onTap: () => _initMedia(retry: true),
+      child: Container(
+        height: 200,
+        width: 250,
+        color: Colors.grey.withValues(alpha: 0.1),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.refresh_rounded, color: Colors.grey, size: 32),
+              SizedBox(height: 6),
+              Text(
+                'Tap to retry',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1000,7 +1064,7 @@ class _ChatBubbleState extends State<ChatBubble>
 
     try {
       if (_localPath != null && File(_localPath!).existsSync()) {
-        await OpenFilex.open(_localPath!);
+        await launchUrl(Uri.file(_localPath!));
         return;
       }
       final String url = widget.fileUrl!;
@@ -1042,7 +1106,7 @@ class _ChatBubbleState extends State<ChatBubble>
         ).showSnackBar(SnackBar(content: Text('Downloaded to: $savePath')));
       }
 
-      await OpenFilex.open(savePath);
+      await launchUrl(Uri.file(savePath));
     } catch (e) {
       debugPrint('Download error: $e');
       if (mounted) {

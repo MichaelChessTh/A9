@@ -38,7 +38,7 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  # Patch all Flutter's generated Swift Packages to use iOS 15.0 recursively
+  # ── iOS 15.0 deployment target ──────────────────────────────────────────────
   system("find Flutter/ephemeral/Packages -name 'Package.swift' -exec sed -i '' 's/\\.iOS(\"13.0\")/\\.iOS(\"15.0\")/g' {} + 2>/dev/null")
   system("sed -i '' \"s/s.ios.deployment_target = '13.0'/s.ios.deployment_target = '15.0'/g\" Flutter/Flutter.podspec 2>/dev/null")
 
@@ -46,9 +46,7 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-
-      # Fix Xcode 16 ExplicitPrecompiledModules cache mismatch (Masonry + UIKit error)
-      # when switching between Debug and Release builds.
+      # Fix Xcode 16 ExplicitPrecompiledModules cache mismatch
       config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       config.build_settings['COMPILER_INDEX_STORE_ENABLE'] = 'NO'

@@ -25,7 +25,9 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
-const crypto = require("crypto");
+
+// Keep one warm instance to avoid cold start latency (no 30-second delays).
+const FUNCTION_OPTS = { minInstances: 1 };
 
 initializeApp();
 
@@ -48,16 +50,16 @@ function decryptMessage(text) {
   try {
     const combined = Buffer.from(text.slice(4), "base64");
 
-    // Try new format first: first 16 bytes = IV, rest = ciphertext
-    if (combined.length > 16 && combined.length % 16 === 16 + (combined.length - 16)) {
+    // New format: first 16 bytes = random IV, rest = ciphertext.
+    // Flutter's encrypt package (PKCS7) produces at least 16 bytes of ciphertext,
+    // so combined is at least 32 bytes (16 IV + 16 cipher).
+    if (combined.length >= 32) {
       try {
         const iv = combined.subarray(0, 16);
         const ciphertext = combined.subarray(16);
-        if (ciphertext.length % 16 === 0) {
-          const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPT_KEY, iv);
-          decipher.setAutoPadding(true);
-          return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
-        }
+        const decipher = crypto.createDecipheriv("aes-256-cbc", ENCRYPT_KEY, iv);
+        decipher.setAutoPadding(true);
+        return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
       } catch (_) { /* fall through to legacy */ }
     }
 
@@ -110,7 +112,7 @@ async function sendPush({ token, title, body, data = {} }) {
 
 // ─── 1. Direct Message notification ─────────────────────────────────────────
 exports.onDirectMessage = onDocumentCreated(
-  "chat_rooms/{roomId}/messages/{msgId}",
+  { document: "chat_rooms/{roomId}/messages/{msgId}", ...FUNCTION_OPTS },
   async (event) => {
     const msg = event.data?.data();
     if (!msg) return;
@@ -118,22 +120,23 @@ exports.onDirectMessage = onDocumentCreated(
     const senderId = msg.senderID;
     const roomId = event.params.roomId;
 
-    // The room ID is "<uid1>_<uid2>", alphabetically sorted.
-    // Determine the recipient uid.
+    // Room ID is "<uid1>_<uid2>", alphabetically sorted.
     const [uid1, uid2] = roomId.split("_");
     const recipientId = uid1 === senderId ? uid2 : uid1;
     if (!recipientId || recipientId === senderId) return;
 
-    // Fetch sender profile for display name
-    const [recipientDoc, senderDoc] = await Promise.all([
+    // Fetch recipient, sender, and chat room in parallel.
+    // chat_rooms doc stores `lastMessage` as plaintext — Flutter writes it
+    // BEFORE encrypting the message body, so it's always human-readable.
+    const [recipientDoc, senderDoc, roomDoc] = await Promise.all([
       db.collection("Users").doc(recipientId).get(),
       db.collection("Users").doc(senderId).get(),
+      db.collection("chat_rooms").doc(roomId).get(),
     ]);
 
     const fcmToken = recipientDoc.data()?.fcmToken;
-    if (!fcmToken) return; // recipient has no token (logged out / never set up)
+    if (!fcmToken) return;
 
-    // Use nickname if recipient has set one for sender, otherwise use sender's username
     const recipientNicknames = recipientDoc.data()?.nicknames || {};
     const senderName =
       recipientNicknames[senderId] ||
@@ -141,21 +144,8 @@ exports.onDirectMessage = onDocumentCreated(
       senderDoc.data()?.email ||
       "Someone";
 
-    // Determine notification body
-    let body;
-    switch (msg.messageType) {
-      case "image":
-        body = "📷 Image";
-        break;
-      case "file":
-        body = `📎 ${msg.fileName || "File"}`;
-        break;
-      case "audio":
-        body = "🎵 Voice message";
-        break;
-      default:
-        body = decryptMessage(msg.message || "");
-    }
+    // Plain-text body from the room metadata — no decryption needed.
+    const body = roomDoc.data()?.lastMessage || "New message";
 
     await sendPush({
       token: fcmToken,
@@ -172,9 +162,10 @@ exports.onDirectMessage = onDocumentCreated(
   }
 );
 
+
 // ─── 2. Group Message notification ───────────────────────────────────────────
 exports.onGroupMessage = onDocumentCreated(
-  "group_rooms/{groupId}/messages/{msgId}",
+  { document: "group_rooms/{groupId}/messages/{msgId}", ...FUNCTION_OPTS },
   async (event) => {
     const msg = event.data?.data();
     if (!msg) return;
@@ -194,21 +185,10 @@ exports.onGroupMessage = onDocumentCreated(
     const senderName =
       senderDoc.data()?.username || senderDoc.data()?.email || "Someone";
 
-    // Determine body
-    let body;
-    switch (msg.messageType) {
-      case "image":
-        body = `${senderName}: 📷 Image`;
-        break;
-      case "file":
-        body = `${senderName}: 📎 ${msg.fileName || "File"}`;
-        break;
-      case "audio":
-        body = `${senderName}: 🎵 Voice message`;
-        break;
-      default:
-        body = `${senderName}: ${decryptMessage(msg.message || "")}`;
-    }
+    // Use the plaintext lastMessage from the group room doc — no decryption needed.
+    const lastMsg = groupData?.lastMessage || "New message";
+    const body = `${senderName}: ${lastMsg}`;
+
 
     // Send to every member except the sender
     const recipients = memberUIDs.filter((uid) => uid !== senderId);

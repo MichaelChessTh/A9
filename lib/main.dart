@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:googlechat/firebase_options.dart';
 import 'package:googlechat/services/auth/auth_gate.dart';
@@ -31,6 +32,10 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase init error: $e');
   }
+
+  // IMPORTANT: Must be registered here (top-level, before runApp) for iOS
+  // background and terminated state notification delivery.
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Enable Firestore offline persistence with a generous cache size (100 MB)
   FirebaseFirestore.instance.settings = const Settings(
@@ -98,6 +103,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
+        NotificationService.isInForeground = true;
         UserService.updatePresence(true);
         // Dismiss any stale notifications from the notification tray
         NotificationService.instance.clearAllNotifications();
@@ -106,6 +112,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:
+        NotificationService.isInForeground = false;
         UserService.updatePresence(false);
         break;
     }

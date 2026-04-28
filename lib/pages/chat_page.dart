@@ -29,9 +29,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:intl/intl.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+
 import 'package:googlechat/l10n/app_localizations.dart';
-import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+
 import 'package:googlechat/services/notifications/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -172,14 +172,29 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   Future<void> _handleSharedFiles(List<dynamic> files) async {
     for (var file in files) {
-      if (file is SharedMediaFile) {
-        final type =
-            file.type == SharedMediaType.image
-                ? MessageType.image
-                : (file.type == SharedMediaType.video
-                    ? MessageType.video
-                    : MessageType.file);
-        await _sendSharedFile(file.path, file.path.split('/').last, type);
+      // Files may be passed as Map<String,String> with 'path' and 'type' keys
+      // (from ShareService) or as raw file paths (String).
+      String? path;
+      MessageType type = MessageType.file;
+      if (file is Map) {
+        path = file['path'] as String?;
+        final t = file['type'] as String?;
+        if (t == 'image') type = MessageType.image;
+        if (t == 'video') type = MessageType.video;
+      } else if (file is String) {
+        path = file;
+        final lower = path.toLowerCase();
+        if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') ||
+            lower.endsWith('.png') || lower.endsWith('.gif') ||
+            lower.endsWith('.webp')) {
+          type = MessageType.image;
+        } else if (lower.endsWith('.mp4') || lower.endsWith('.mov') ||
+            lower.endsWith('.avi') || lower.endsWith('.mkv')) {
+          type = MessageType.video;
+        }
+      }
+      if (path != null && path.isNotEmpty) {
+        await _sendSharedFile(path, path.split('/').last, type);
       }
     }
   }
@@ -585,7 +600,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       final path = await _audioRecorder.stop();
       if (cancel) return;
       if (path == null) {
-        Fluttertoast.showToast(msg: 'Recording failed: no file path');
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recording failed: no file path')));
         return;
       }
       Uint8List bytes;
@@ -598,7 +613,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       } else {
         final file = File(path);
         if (!await file.exists()) {
-          Fluttertoast.showToast(msg: 'Recording error: file not found');
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recording error: file not found')));
           return;
         }
         bytes = await file.readAsBytes();
@@ -611,7 +626,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       );
     } catch (e) {
       debugPrint('Error stopping recording: $e');
-      Fluttertoast.showToast(msg: 'Recording error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Recording error: $e')));
     } finally {
       if (mounted) setState(() => _isRecording = false);
     }
@@ -630,9 +645,8 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       _uploadProgress = 0.0;
     });
     try {
-      Fluttertoast.showToast(
-        msg: 'Sending attachment...',
-        toastLength: Toast.LENGTH_SHORT,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sending attachment...'), duration: Duration(seconds: 1)),
       );
       final url = await _chatService.uploadFile(
         bytes: bytes,
@@ -682,9 +696,8 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       _clearReply();
     } catch (e) {
       if (mounted) {
-        Fluttertoast.showToast(
-          msg: 'Error uploading file: $e',
-          toastLength: Toast.LENGTH_LONG,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading file: $e'), duration: const Duration(seconds: 3)),
         );
       }
     } finally {

@@ -5,7 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -177,7 +177,7 @@ class UpdateService with ChangeNotifier {
     if (_localApkPath == null) return;
     final file = File(_localApkPath!);
     if (await file.exists()) {
-      await OpenFilex.open(_localApkPath!);
+      await launchUrl(Uri.file(_localApkPath!));
     } else {
       debugPrint("APK file not found at $_localApkPath");
       _isDownloaded = false;
